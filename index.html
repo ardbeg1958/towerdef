@@ -279,8 +279,9 @@ function aiStep(dt){
  if(cand.length&&(preferUp||G.money>=cost*1.3)){cand.sort((a,b)=>cover(b.k,b.x,b.y)*TW[b.k].cost-cover(a.k,a.x,a.y)*TW[a.k].cost+(Math.random()-.5)*200);const t=cand[0],uc=upCost(t.k,t.lv);G.money-=uc;t.spent+=uc;t.lv++;sfx('place');aiCursor(t.x,t.y,'#9fd3ff');aiSay(TW[t.k].name+'をLv'+t.lv+'に強化')}
 }
 function nextStage(win){const t=G.theme,s=G.st;$('ovEnd').classList.remove('on');
- if(win){lossStreak=0;s<2?newGame(t,s+1):newGame((t+1)%4,0)}
- else if(lossStreak<1){lossStreak++;newGame(t,s)}else{lossStreak=0;s<2?newGame(t,s+1):newGame((t+1)%4,0)}
+ const adv=()=>{lossStreak=0;t<3?newGame(t+1,s):newGame(0,(s+1)%3)}; // テーマを毎ステージ切り替え
+ if(win)adv();
+ else if(lossStreak<1){lossStreak++;newGame(t,s)}else adv();
  aiSay('ステージ開始');drawButtonIcons()}
 function setAuto(on){save.auto=on;persist();if(G){G.buy=null;if(on){G.speed=autoSpeed;G.ai.t=1;G.ai.w0=0;aiSay('オートで観戦中')}else{if(G.speed>2)G.speed=2;aiSay('')}}refreshAll()}
 
@@ -467,8 +468,8 @@ let menuTheme=save.theme;
 function openMenu(){if(G)G.paused=true;menuTheme=G?G.theme:save.theme;buildMenu();$('ovMenu').classList.add('on');$('bResume').style.display=G&&G.state==='play'?'':'none';$('bRetry').style.display=G?'':'none'}
 function closeMenu(){$('ovMenu').classList.remove('on');if(G)G.paused=false;refreshAll()}
 function buildMenu(){
- const tabs=$('themeTabs');tabs.innerHTML='';THEMES.forEach((T,i)=>{const b=document.createElement('button');b.textContent=T.name;if(i===menuTheme)b.className='sel';b.onclick=()=>{menuTheme=i;buildMenu()};tabs.appendChild(b)});
- const L=$('stageList');L.innerHTML='';for(let s=0;s<3;s++){const b=document.createElement('button');const st=save.stars[menuTheme*3+s]||0;const lock=s>save.prog[menuTheme];
+ const tabs=$('themeTabs');tabs.innerHTML='';THEMES.forEach((T,i)=>{const b=document.createElement('button');b.textContent=T.name;if(i===menuTheme)b.className='sel';b.onclick=()=>{menuTheme=i;if(!G||G.theme!==i){newGame(i,0);G.paused=true;drawButtonIcons();refreshAll();aiSay(THEMES[i].name+'に切り替え');$('bResume').style.display=''}buildMenu()};tabs.appendChild(b)});
+ const L=$('stageList');L.innerHTML='';for(let s=0;s<3;s++){const b=document.createElement('button');const st=save.stars[menuTheme*3+s]||0;const lock=!save.auto&&s>save.prog[menuTheme];
   b.innerHTML=`<span>${lock?'🔒 ':''}ステージ${s+1}「${STAGE_NAMES[menuTheme][s]}」<small style="color:#9aa">　${8+s}波</small></span><span class="star">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span>`;b.disabled=lock;b.onclick=()=>{$('ovMenu').classList.remove('on');newGame(menuTheme,s);drawButtonIcons()};L.appendChild(b)}
  $('sndChk').checked=save.sound;$('volR').value=save.vol;
 }
